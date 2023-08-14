@@ -2,14 +2,13 @@ import numpy as np
 from astropy.io import fits
 from astropy.modeling import models
 from skimage.morphology import label
-
+from astropy import wcs   
 from scipy.interpolate import griddata
 from astropy.convolution import convolve, Box1DKernel
-
 import sys
+sys.path.append('/hpc/home/zg64/grism_sim/pyLINEAR/')
+import pylinear  # import pylinear
 import matplotlib.pyplot as plt
-
-import pylinear
 
 # Noise terms
 BCK_ZODIACAL = 1.047  # e/pix/sec
@@ -31,7 +30,8 @@ def extract_outside_pylinear():
     spec_1d = np.sum(cutout, axis=0)
 
     # get sens curve
-    sens = fits.open('Wang2022_sens_0720_2020.fits')
+    ## change to os.join later
+    sens = fits.open('/hpc/group/cosmology/zg64/Data/grism/Roman/Wang2022_sens_0720_2020.fits')
 
     # create a lambda array
     # this will only match approximately
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     beam = '+1'
     NPIX = 4096
     ZP = 26.3
-    mag1, mag2 = 19.5, 20.5
+    mag1, mag2 = 19.0, 19.5
     exptime = 3600
 
     # First create direct image and segfile
@@ -165,10 +165,18 @@ if __name__ == '__main__':
     # Save
     # Create a header (pyLINEAR needs WCS)
     # Get a header with WCS
-    extdir = '/Volumes/Joshi_external_HDD/Roman/'
-    img_sim_dir = extdir + 'roman_direct_sims/sims2021/K_5degimages_part1/'
-    dirimg_hdr = fits.getheader(img_sim_dir + '5deg_Y106_0_1.fits')
-    hdr = dirimg_hdr
+    crval = [53.0,-27.0]         # RA,Dec center of nominal field
+    pixscl = 0.0575               # pixel scale (arcsec/pix) of segmentation & image
+
+    w = wcs.WCS(naxis=2)                  # the WCS object
+    w.wcs.crpix = [NPIX,NPIX]   # put the CRPIX at the center of the image
+    w.wcs.crval = crval                   # set the RA,Dec of the center
+    w.wcs.ctype = ['RA---TAN','DEC--TAN'] # use RA,Dec projection
+    p = pixscl/3600.                      # change units from arcsec/pix to deg/pix
+    w.wcs.cd = [[-p,0.],[0.,p]]           # set the CD matrix; the neg sign makes E-left
+
+    # put the WCS into a fits header
+    hdr = w.to_header()
 
     ihdul = fits.HDUList()
     ext_sci = fits.ImageHDU(data=full_img, header=hdr, name='SCI')
@@ -204,8 +212,9 @@ if __name__ == '__main__':
         fho.write('\n' + dirimage + '  ' + obs_filt)
 
     # -------- WCS
-    obs_ra = float(dirimg_hdr['CRVAL1'])
-    obs_dec = float(dirimg_hdr['CRVAL2'])
+    #obs_ra = float(dirimg_hdr['CRVAL1'])
+    #obs_dec = float(dirimg_hdr['CRVAL2'])
+    obs_ra,obs_dec = 53.0,-27.0
     rollangles = [0.0]
 
     with open(wcslst, 'w') as fhw:
