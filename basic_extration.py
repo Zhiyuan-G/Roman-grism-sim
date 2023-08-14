@@ -199,8 +199,8 @@ if __name__ == '__main__':
         fh.write("# 1: SEGMENTATION ID" + "\n")
         fh.write("# 2: SED FILE" + "\n")
 
-        fh.write('1 7044.sed' + "\n")
-        fh.write('2 5329.sed' + "\n")
+        fh.write('1 ../seds/7044.sed' + "\n")
+        fh.write('2 ../seds/5329.sed' + "\n")
 
     # -------- OBS
     obs_filt = 'hst_wfc3_f105w'
